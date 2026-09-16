@@ -4,21 +4,24 @@ server:
     context-path: /api
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
   datasource:
-    url: jdbc:postgresql://localhost:5432/infrapulse
-    username: postgres
-    password: postgres
-    hikari:
-      maximum-pool-size: 5
-    initialization-mode: always
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create-drop
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+  flyway:
+    enabled: false
   redis:
     host: localhost
     port: 6379
