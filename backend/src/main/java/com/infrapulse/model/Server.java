@@ -29,7 +29,7 @@ public class Server {
     @Column(nullable = false)
     private String agentVersion;
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL DEFAULT '{}'")
     private List<String> ipAddresses;
 
     @Column(nullable = false)

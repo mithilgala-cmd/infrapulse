@@ -24,23 +24,23 @@ public class TroubleshootingPlaybook {
     @Column(nullable = false)
     private String title;
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL")
     @Builder.Default
     private List<String> symptoms = new java.util.ArrayList<>();
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL")
     @Builder.Default
     private List<String> checks = new java.util.ArrayList<>();
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL")
     @Builder.Default
     private List<String> possibleCauses = new java.util.ArrayList<>();
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL")
     @Builder.Default
     private List<String> recommendedActions = new java.util.ArrayList<>();
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL")
     @Builder.Default
     private List<String> escalationConditions = new java.util.ArrayList<>();
 }

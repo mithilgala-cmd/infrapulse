@@ -51,7 +51,7 @@ public class Incident {
 
     private String technicianNotes;
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL DEFAULT '{}'")
     @Builder.Default
     private List<String> statusHistory = new ArrayList<>();
 
@@ -59,11 +59,11 @@ public class Incident {
 
     private String escalationReason;
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL DEFAULT '{}'")
     @Builder.Default
     private List<String> troubleshootingHistory = new ArrayList<>();
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL DEFAULT '{}'")
     @Builder.Default
     private List<String> evidenceLog = new ArrayList<>();
 

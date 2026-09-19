@@ -27,11 +27,11 @@ public class Escalation {
     @Column(nullable = false)
     private String reason;
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL DEFAULT '{}'")
     @Builder.Default
     private List<String> troubleshootingPerformed = new ArrayList<>();
 
-    @Column
+    @Column(columnDefinition = "TEXT[] NOT NULL DEFAULT '{}'")
     @Builder.Default
     private List<String> evidence = new ArrayList<>();
 
