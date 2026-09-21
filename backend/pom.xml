@@ -19,7 +19,7 @@
     <description>Spring Boot API for InfraPulse infrastructure monitoring</description>
 
     <properties>
-        <java.version>25</java.version>
+        <java.version>23</java.version>
         <lombok.version>1.18.42</lombok.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -91,8 +91,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.1</version>
                 <configuration>
-                    <source>25</source>
-                    <target>25</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

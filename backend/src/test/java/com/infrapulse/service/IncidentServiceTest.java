@@ -48,32 +48,41 @@ class IncidentServiceTest {
     }
 
     @Test
-    void updateStatusAdvancesIncidentThroughValidTransition() {
+    void updateStatusAdvancesIncidentThroughFullValidLifecycle() {
         Incident incident = incident("NEW");
         when(incidentRepository.findById(4L)).thenReturn(Optional.of(incident));
         when(incidentRepository.save(incident)).thenReturn(incident);
-        IncidentStatusTransition transition = new IncidentStatusTransition(
-                "ACKNOWLEDGED", "Technician acknowledged the alert");
 
-        IncidentDto result = incidentService.updateStatus(4L, transition);
+        IncidentDto acknowledged = incidentService.updateStatus(4L,
+                new IncidentStatusTransition("ACKNOWLEDGED", "Technician acknowledged the alert"));
+        IncidentDto investigating = incidentService.updateStatus(4L,
+                new IncidentStatusTransition("INVESTIGATING", "Investigating root cause"));
+        IncidentDto mitigationApplied = incidentService.updateStatus(4L,
+                new IncidentStatusTransition("MITIGATION_APPLIED", "Mitigation applied"));
+        IncidentDto resolved = incidentService.updateStatus(4L,
+                new IncidentStatusTransition("RESOLVED", "Metrics recovered"));
+        IncidentDto closed = incidentService.updateStatus(4L,
+                new IncidentStatusTransition("CLOSED", "Closed after verification"));
 
-        assertThat(result.getStatus()).isEqualTo("ACKNOWLEDGED");
-        assertThat(incident.getStatusHistory()).containsExactly("NEW", "ACKNOWLEDGED");
-        verify(statusHistoryRepository).save(any());
-        verify(incidentRepository).save(incident);
+        assertThat(acknowledged.getStatus()).isEqualTo("ACKNOWLEDGED");
+        assertThat(investigating.getStatus()).isEqualTo("INVESTIGATING");
+        assertThat(mitigationApplied.getStatus()).isEqualTo("MITIGATION_APPLIED");
+        assertThat(resolved.getStatus()).isEqualTo("RESOLVED");
+        assertThat(closed.getStatus()).isEqualTo("CLOSED");
+        assertThat(incident.getStatusHistory()).containsExactly(
+                "NEW", "ACKNOWLEDGED", "INVESTIGATING", "MITIGATION_APPLIED", "RESOLVED", "CLOSED");
+        verify(statusHistoryRepository, times(5)).save(any());
+        verify(incidentRepository, times(5)).save(incident);
     }
 
     @Test
-    void updateStatusRejectsInvalidTransition() {
-        Incident incident = incident("NEW");
-        when(incidentRepository.findById(4L)).thenReturn(Optional.of(incident));
-        IncidentStatusTransition transition = new IncidentStatusTransition("RESOLVED", null);
-
-        assertThatThrownBy(() -> incidentService.updateStatus(4L, transition))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Invalid status transition");
-        verify(incidentRepository, never()).save(any());
-        verifyNoInteractions(statusHistoryRepository);
+    void updateStatusRejectsInvalidTransitions() {
+        assertInvalidTransition("NEW", "INVESTIGATING");
+        assertInvalidTransition("ACKNOWLEDGED", "RESOLVED");
+        assertInvalidTransition("INVESTIGATING", "CLOSED");
+        assertInvalidTransition("MITIGATION_APPLIED", "CLOSED");
+        assertInvalidTransition("RESOLVED", "INVESTIGATING");
+        assertInvalidTransition("CLOSED", "RESOLVED");
     }
 
     @Test
@@ -102,5 +111,18 @@ class IncidentServiceTest {
                 .troubleshootingHistory(new ArrayList<>())
                 .evidenceLog(new ArrayList<>())
                 .build();
+    }
+
+    private void assertInvalidTransition(String currentStatus, String newStatus) {
+        reset(incidentRepository, statusHistoryRepository);
+        Incident incident = incident(currentStatus);
+        when(incidentRepository.findById(4L)).thenReturn(Optional.of(incident));
+        IncidentStatusTransition transition = new IncidentStatusTransition(newStatus, null);
+
+        assertThatThrownBy(() -> incidentService.updateStatus(4L, transition))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Invalid status transition");
+        verify(incidentRepository, never()).save(any());
+        verifyNoInteractions(statusHistoryRepository);
     }
 }

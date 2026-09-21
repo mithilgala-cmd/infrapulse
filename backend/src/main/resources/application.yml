@@ -5,10 +5,10 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/infrapulse
-    username: infrapulse
-    password: infrapulse
-    driver-class-name: org.postgresql.Driver
+    url: ${INFRAPULSE_DB_URL:jdbc:postgresql://localhost:5432/infrapulse}
+    username: ${INFRAPULSE_DB_USERNAME:infrapulse}
+    password: ${INFRAPULSE_DB_PASSWORD:infrapulse_dev_password}
+    driver-class-name: ${INFRAPULSE_DB_DRIVER:org.postgresql.Driver}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -20,8 +20,8 @@ spring:
     enabled: true
     locations: classpath:db/migration
   redis:
-    host: localhost
-    port: 6379
+    host: ${INFRAPULSE_REDIS_HOST:localhost}
+    port: ${INFRAPULSE_REDIS_PORT:6379}
 
 management:
   endpoints:

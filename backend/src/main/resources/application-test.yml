@@ -3,10 +3,10 @@ server:
 
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    url: ${INFRAPULSE_TEST_DB_URL:jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1}
+    username: ${INFRAPULSE_TEST_DB_USERNAME:sa}
+    password: ${INFRAPULSE_TEST_DB_PASSWORD:}
+    driver-class-name: ${INFRAPULSE_TEST_DB_DRIVER:org.h2.Driver}
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -18,5 +18,5 @@ spring:
   flyway:
     enabled: false
   redis:
-    host: localhost
-    port: 6379
+    host: ${INFRAPULSE_REDIS_HOST:localhost}
+    port: ${INFRAPULSE_REDIS_PORT:6379}

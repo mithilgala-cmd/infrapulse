@@ -47,50 +47,84 @@ class DiagnosticEngineTest {
     }
 
     @Test
-    void evaluateCreatesDiagnosticsForEachTriggeredCondition() {
-        MetricObservation observation = MetricObservation.builder()
-                .cpuPercentTotal(95.0)
-                .memoryTotalBytes(100)
-                .memoryAvailableBytes(5)
-                .swapPercentUsed(60.0)
-                .diskPercentUsed(95.0)
-                .networkErrin(1)
-                .networkErrout(0)
-                .networkDropin(0)
-                .networkDropout(0)
-                .build();
-        Server server = Server.builder().id(7L).hostname("server-1").build();
-        when(metricObservationRepository.findRecentByServerId(7L, 1)).thenReturn(List.of(observation));
-        when(serverRepository.findById(7L)).thenReturn(Optional.of(server));
-        when(diagnosticResultRepository.save(any(DiagnosticResult.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    void evaluateDetectsCpuAboveThreshold() {
+        List<DiagnosticResult> results = evaluate(healthyObservation().cpuPercentTotal(90.1).build());
 
-        List<DiagnosticResult> results = diagnosticEngine.evaluate(7L);
-
-        assertThat(results).extracting(DiagnosticResult::getConditionCode)
-                .containsExactlyInAnyOrder("HIGH_CPU", "MEMORY_PRESSURE", "DISK_CAPACITY", "NETWORK_DEGRADATION");
-        assertThat(results).allSatisfy(result -> {
-            assertThat(result.getServer()).isSameAs(server);
-            assertThat(result.getMetricObservation()).isSameAs(observation);
-            assertThat(result.getTimestamp()).isNotNull();
-            assertThat(result.isActive()).isTrue();
+        assertThat(results).singleElement().satisfies(result -> {
+            assertThat(result.getConditionCode()).isEqualTo("HIGH_CPU");
+            assertThat(result.getDiagnosis()).isEqualTo("High CPU utilization");
+            assertThat(result.getEvidence()).contains("90.1%");
         });
-        verify(diagnosticResultRepository, times(4)).save(any(DiagnosticResult.class));
+    }
+
+    @Test
+    void evaluateDetectsMemoryPressureWhenMemoryAndSwapExceedThresholds() {
+        List<DiagnosticResult> results = evaluate(healthyObservation()
+                .memoryTotalBytes(100)
+                .memoryAvailableBytes(9)
+                .swapPercentUsed(50.1)
+                .build());
+
+        assertThat(results).singleElement().satisfies(result -> {
+            assertThat(result.getConditionCode()).isEqualTo("MEMORY_PRESSURE");
+            assertThat(result.getDiagnosis()).isEqualTo("Memory pressure");
+            assertThat(result.getEvidence()).contains("91.0% used");
+        });
+    }
+
+    @Test
+    void evaluateDoesNotDetectMemoryPressureWithoutSwapPressure() {
+        List<DiagnosticResult> results = evaluate(healthyObservation()
+                .memoryTotalBytes(100)
+                .memoryAvailableBytes(1)
+                .swapPercentUsed(50.0)
+                .build());
+
+        assertThat(results).isEmpty();
+        verifyNoInteractions(diagnosticResultRepository);
+    }
+
+    @Test
+    void evaluateDetectsDiskCapacityAboveThreshold() {
+        List<DiagnosticResult> results = evaluate(healthyObservation().diskPercentUsed(90.1).build());
+
+        assertThat(results).singleElement().satisfies(result -> {
+            assertThat(result.getConditionCode()).isEqualTo("DISK_CAPACITY");
+            assertThat(result.getDiagnosis()).isEqualTo("Low disk capacity");
+        });
+    }
+
+    @Test
+    void evaluateDetectsNetworkDegradationFromErrorsOrDrops() {
+        List<DiagnosticResult> results = evaluate(healthyObservation().networkDropout(1).build());
+
+        assertThat(results).singleElement().satisfies(result -> {
+            assertThat(result.getConditionCode()).isEqualTo("NETWORK_DEGRADATION");
+            assertThat(result.getDiagnosis()).isEqualTo("Network connectivity degradation");
+        });
     }
 
     @Test
     void evaluateReturnsNoDiagnosticsForHealthyObservation() {
-        MetricObservation observation = MetricObservation.builder()
-                .cpuPercentTotal(50.0)
-                .memoryTotalBytes(100)
-                .memoryAvailableBytes(20)
-                .swapPercentUsed(10.0)
-                .diskPercentUsed(50.0)
-                .build();
-        when(metricObservationRepository.findRecentByServerId(2L, 1)).thenReturn(List.of(observation));
-        when(serverRepository.findById(2L)).thenReturn(Optional.of(Server.builder().id(2L).build()));
+        List<DiagnosticResult> results = evaluate(healthyObservation().build());
 
-        List<DiagnosticResult> results = diagnosticEngine.evaluate(2L);
+        assertThat(results).isEmpty();
+        verifyNoInteractions(diagnosticResultRepository);
+    }
+
+    @Test
+    void evaluateDoesNotTriggerAtExactThresholdBoundaries() {
+        List<DiagnosticResult> results = evaluate(healthyObservation()
+                .cpuPercentTotal(90.0)
+                .memoryTotalBytes(100)
+                .memoryAvailableBytes(10)
+                .swapPercentUsed(50.0)
+                .diskPercentUsed(90.0)
+                .networkErrin(0)
+                .networkErrout(0)
+                .networkDropin(0)
+                .networkDropout(0)
+                .build());
 
         assertThat(results).isEmpty();
         verifyNoInteractions(diagnosticResultRepository);
@@ -104,5 +138,35 @@ class DiagnosticEngineTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("No metrics found for server id: 99");
         verifyNoInteractions(serverRepository, diagnosticResultRepository);
+    }
+
+    private List<DiagnosticResult> evaluate(MetricObservation observation) {
+        Server server = Server.builder().id(7L).hostname("server-1").build();
+        when(metricObservationRepository.findRecentByServerId(7L, 1)).thenReturn(List.of(observation));
+        when(serverRepository.findById(7L)).thenReturn(Optional.of(server));
+
+        List<DiagnosticResult> results = diagnosticEngine.evaluate(7L);
+
+        assertThat(results).allSatisfy(result -> {
+            assertThat(result.getServer()).isSameAs(server);
+            assertThat(result.getMetricObservation()).isSameAs(observation);
+            assertThat(result.getTimestamp()).isNotNull();
+            assertThat(result.isActive()).isTrue();
+        });
+        verify(diagnosticResultRepository, times(results.size())).save(any(DiagnosticResult.class));
+        return results;
+    }
+
+    private MetricObservation.MetricObservationBuilder healthyObservation() {
+        return MetricObservation.builder()
+                .cpuPercentTotal(50.0)
+                .memoryTotalBytes(100)
+                .memoryAvailableBytes(20)
+                .swapPercentUsed(10.0)
+                .diskPercentUsed(50.0)
+                .networkErrin(0)
+                .networkErrout(0)
+                .networkDropin(0)
+                .networkDropout(0);
     }
 }
