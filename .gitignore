@@ -6,6 +6,10 @@ build/
 *.war
 *.class
 
+# ===== Local tool downloads =====
+apache-maven-*/
+maven.zip
+
 # ===== Python =====
 __pycache__/
 *.py[cod]
