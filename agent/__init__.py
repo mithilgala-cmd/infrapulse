@@ -1,1 +1,1 @@
-InfraPulse Monitoring Agent
+"""InfraPulse Monitoring Agent."""

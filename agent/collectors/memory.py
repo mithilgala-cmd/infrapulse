@@ -16,10 +16,12 @@ def collect_memory_metrics() -> MemoryMetrics:
         available_bytes=mem.available,
         used_bytes=mem.used,
         free_bytes=mem.free,
-        active_bytes=mem.active,
-        inactive_bytes=mem.inactive,
-        buffers_bytes=mem.buffers,
-        cached_bytes=mem.cached,
+        # active/inactive/buffers/cached are Unix-only in psutil;
+        # fall back to 0 where the platform does not expose them.
+        active_bytes=getattr(mem, "active", 0) or 0,
+        inactive_bytes=getattr(mem, "inactive", 0) or 0,
+        buffers_bytes=getattr(mem, "buffers", 0) or 0,
+        cached_bytes=getattr(mem, "cached", 0) or 0,
         swap_total_bytes=swap.total,
         swap_used_bytes=swap.used,
         swap_free_bytes=swap.free,

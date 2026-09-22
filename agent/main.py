@@ -11,7 +11,7 @@ import json
 import sys
 import time
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from agent.config import AgentConfig
 from agent.collectors import (
@@ -102,7 +102,7 @@ def collect_snapshot(config: AgentConfig = None) -> MetricSnapshot:
     # Build snapshot
     snapshot = MetricSnapshot(
         server=server,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         cpu=cpu,
         memory=memory,
         disk=disk,
