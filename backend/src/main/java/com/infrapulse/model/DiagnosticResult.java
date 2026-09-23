@@ -44,6 +44,6 @@ public class DiagnosticResult {
     @Column(nullable = false)
     private String recommendedAction;
 
-    @Column(nullable = false)
+    @Column(name = "is_active", nullable = false)
     private boolean active;
 }

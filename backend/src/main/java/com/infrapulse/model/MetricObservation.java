@@ -26,51 +26,51 @@ public class MetricObservation {
     private Instant timestamp;
 
     // CPU
-    @Column(nullable = false)
+    @Column(name = "cpu_percent_total", nullable = false)
     private double cpuPercentTotal;
-    @Column(nullable = false)
+    @Column(name = "cpu_percent_user", nullable = false)
     private double cpuPercentUser;
-    @Column(nullable = false)
+    @Column(name = "cpu_percent_system", nullable = false)
     private double cpuPercentSystem;
-    @Column(nullable = false)
+    @Column(name = "cpu_percent_idle", nullable = false)
     private double cpuPercentIdle;
-    @Column(nullable = false)
+    @Column(name = "cpu_percent_iowait", nullable = false)
     private double cpuPercentIowait;
-    @Column(nullable = false)
+    @Column(name = "load_average_1m", nullable = false)
     private double loadAverage1m;
-    @Column(nullable = false)
+    @Column(name = "load_average_5m", nullable = false)
     private double loadAverage5m;
-    @Column(nullable = false)
+    @Column(name = "load_average_15m", nullable = false)
     private double loadAverage15m;
-    @Column(nullable = false)
+    @Column(name = "num_cpu_cores", nullable = false)
     private int numCpuCores;
-    @Column(nullable = false)
+    @Column(name = "num_logical_cpus", nullable = false)
     private int numLogicalCpus;
 
     // Memory
-    @Column(nullable = false)
+    @Column(name = "memory_total_bytes", nullable = false)
     private long memoryTotalBytes;
-    @Column(nullable = false)
+    @Column(name = "memory_available_bytes", nullable = false)
     private long memoryAvailableBytes;
-    @Column(nullable = false)
+    @Column(name = "memory_used_bytes", nullable = false)
     private long memoryUsedBytes;
-    @Column(nullable = false)
+    @Column(name = "memory_free_bytes", nullable = false)
     private long memoryFreeBytes;
-    @Column(nullable = false)
+    @Column(name = "memory_active_bytes", nullable = false)
     private long memoryActiveBytes;
-    @Column(nullable = false)
+    @Column(name = "memory_inactive_bytes", nullable = false)
     private long memoryInactiveBytes;
-    @Column(nullable = false)
+    @Column(name = "memory_buffers_bytes", nullable = false)
     private long memoryBuffersBytes;
-    @Column(nullable = false)
+    @Column(name = "memory_cached_bytes", nullable = false)
     private long memoryCachedBytes;
-    @Column(nullable = false)
+    @Column(name = "swap_total_bytes", nullable = false)
     private long swapTotalBytes;
-    @Column(nullable = false)
+    @Column(name = "swap_used_bytes", nullable = false)
     private long swapUsedBytes;
-    @Column(nullable = false)
+    @Column(name = "swap_free_bytes", nullable = false)
     private long swapFreeBytes;
-    @Column(nullable = false)
+    @Column(name = "swap_percent_used", nullable = false)
     private double swapPercentUsed;
 
     // Disk
@@ -82,41 +82,41 @@ public class MetricObservation {
     private long diskFreeBytes;
     @Column(nullable = false)
     private double diskPercentUsed;
-    @Column(nullable = false)
+    @Column(name = "disk_io_read_bytes", nullable = false)
     private long diskIOReadBytes;
-    @Column(nullable = false)
+    @Column(name = "disk_io_write_bytes", nullable = false)
     private long diskIOWriteBytes;
-    @Column(nullable = false)
+    @Column(name = "disk_io_read_count", nullable = false)
     private long diskIOReadCount;
-    @Column(nullable = false)
+    @Column(name = "disk_io_write_count", nullable = false)
     private long diskIOWriteCount;
 
     // Network
-    @Column(nullable = false)
+    @Column(name = "network_bytes_sent", nullable = false)
     private long networkBytesSent;
-    @Column(nullable = false)
+    @Column(name = "network_bytes_recv", nullable = false)
     private long networkBytesRecv;
-    @Column(nullable = false)
+    @Column(name = "network_packets_sent", nullable = false)
     private long networkPacketsSent;
-    @Column(nullable = false)
+    @Column(name = "network_packets_recv", nullable = false)
     private long networkPacketsRecv;
-    @Column(nullable = false)
+    @Column(name = "network_errin", nullable = false)
     private long networkErrin;
-    @Column(nullable = false)
+    @Column(name = "network_errout", nullable = false)
     private long networkErrout;
-    @Column(nullable = false)
+    @Column(name = "network_dropin", nullable = false)
     private long networkDropin;
-    @Column(nullable = false)
+    @Column(name = "network_dropout", nullable = false)
     private long networkDropout;
 
     // System
-    @Column(nullable = false)
+    @Column(name = "process_count", nullable = false)
     private int processCount;
-    @Column(nullable = false)
+    @Column(name = "uptime_seconds", nullable = false)
     private double uptimeSeconds;
-    @Column(nullable = false)
+    @Column(name = "boot_time", nullable = false)
     private Instant bootTime;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }
