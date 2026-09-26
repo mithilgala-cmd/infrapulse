@@ -16,6 +16,8 @@ public class MetricIngestionRequest {
     @NotBlank
     private String hostname;
 
+    private List<String> ipAddresses;
+
     @NotNull
     private Instant timestamp;
 

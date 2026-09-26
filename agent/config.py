@@ -35,6 +35,9 @@ class AgentConfig:
     collect_processes: bool = field(default_factory=lambda: os.environ.get("INFRAPULSE_COLLECT_PROCESSES", "true").lower() == "true")
     collect_system: bool = field(default_factory=lambda: os.environ.get("INFRAPULSE_COLLECT_SYSTEM", "true").lower() == "true")
 
+    # Delivery toggle (default off: collect-and-print locally)
+    send_metrics: bool = field(default_factory=lambda: os.environ.get("INFRAPULSE_SEND_METRICS", "false").lower() == "true")
+
     # Process collector settings
     max_processes: int = field(default_factory=lambda: int(os.environ.get("INFRAPULSE_MAX_PROCESSES", "50")))
 

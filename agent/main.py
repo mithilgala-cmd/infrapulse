@@ -132,6 +132,18 @@ def main() -> None:
     snapshot = collect_snapshot(config)
     print_snapshot(snapshot)
 
+    # Optionally deliver the snapshot to the backend API
+    if config.send_metrics:
+        from agent.sender import post_snapshot, resolve_metrics_url
+
+        url = resolve_metrics_url(config)
+        logger.info("Sending metrics to %s ...", url)
+        try:
+            status, body = post_snapshot(snapshot, config)
+            logger.info("Backend accepted metrics: HTTP %s: %s", status, body)
+        except RuntimeError as exc:
+            logger.error("%s", exc)
+
 
 if __name__ == "__main__":
     main()

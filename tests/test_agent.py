@@ -7,7 +7,10 @@ and metric snapshot serialization using only the standard library.
 
 import json
 import os
+import threading
 import unittest
+from datetime import datetime
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from agent.collectors import (
     collect_cpu_metrics,
@@ -20,6 +23,11 @@ from agent.collectors import (
 from agent.config import AgentConfig
 from agent.main import collect_snapshot
 from agent.models import MetricSnapshot
+from agent.sender import (
+    build_ingestion_payload,
+    post_snapshot,
+    resolve_metrics_url,
+)
 
 
 class TestCpuCollector(unittest.TestCase):
@@ -155,6 +163,105 @@ class TestMetricSnapshot(unittest.TestCase):
         self.assertEqual(parsed["server"]["hostname"], config.hostname)
         self.assertIn("percent_total", parsed["cpu"])
         self.assertIn("total_bytes", parsed["memory"])
+
+
+class TestIngestionPayload(unittest.TestCase):
+    def test_matches_backend_contract(self):
+        config = AgentConfig(max_processes=5)
+        payload = build_ingestion_payload(collect_snapshot(config))
+        # Top-level sections required by MetricIngestionRequest.
+        for section in ("hostname", "timestamp", "cpu", "memory", "disk", "network"):
+            self.assertIn(section, payload)
+        self.assertEqual(payload["hostname"], config.hostname)
+        self.assertIn("ipAddresses", payload)
+        # Timestamps must be ISO-8601 parseable (backend Instant fields).
+        datetime.fromisoformat(payload["timestamp"])
+        # Spot-check nested contract names.
+        self.assertIn("percentTotal", payload["cpu"])
+        self.assertIn("numCpuCores", payload["cpu"])
+        self.assertIn("totalBytes", payload["memory"])
+        self.assertIn("swapPercentUsed", payload["memory"])
+        self.assertIn("ioReadBytes", payload["disk"])
+        self.assertIn("bytesSent", payload["network"])
+        self.assertIn("errin", payload["network"])
+
+    def test_integral_fields_are_ints(self):
+        config = AgentConfig(max_processes=5)
+        payload = build_ingestion_payload(collect_snapshot(config))
+        self.assertIsInstance(payload["memory"]["totalBytes"], int)
+        self.assertIsInstance(payload["disk"]["ioReadBytes"], int)
+        self.assertIsInstance(payload["network"]["bytesSent"], int)
+        self.assertIsInstance(payload["cpu"]["numCpuCores"], int)
+
+    def test_optional_sections(self):
+        config = AgentConfig(max_processes=5)
+        payload = build_ingestion_payload(collect_snapshot(config))
+        self.assertIn("process", payload)
+        self.assertGreaterEqual(payload["process"]["processCount"], 0)
+        self.assertIn("system", payload)
+        datetime.fromisoformat(payload["system"]["bootTime"])
+        self.assertGreater(payload["system"]["uptimeSeconds"], 0)
+
+    def test_url_resolution(self):
+        config = AgentConfig(
+            api_base_url="http://localhost:8082/",
+            metrics_endpoint="/api/metrics",
+        )
+        self.assertEqual(
+            resolve_metrics_url(config), "http://localhost:8082/api/metrics"
+        )
+
+
+class _CaptureHandler(BaseHTTPRequestHandler):
+    received_path = None
+    received_body = None
+
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        _CaptureHandler.received_body = self.rfile.read(length)
+        _CaptureHandler.received_path = self.path
+        reply = b'{"id":1}'
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(reply)))
+        self.end_headers()
+        self.wfile.write(reply)
+
+    def log_message(self, *args):
+        pass
+
+
+class TestPostSnapshot(unittest.TestCase):
+    def test_round_trip_to_local_stub(self):
+        server = HTTPServer(("127.0.0.1", 0), _CaptureHandler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            config = AgentConfig(
+                api_base_url=f"http://127.0.0.1:{server.server_port}",
+                metrics_endpoint="/api/metrics",
+                max_processes=5,
+            )
+            snapshot = collect_snapshot(config)
+            status, body = post_snapshot(snapshot, config)
+            self.assertEqual(status, 200)
+            self.assertEqual(_CaptureHandler.received_path, "/api/metrics")
+            parsed = json.loads(_CaptureHandler.received_body.decode("utf-8"))
+            self.assertEqual(parsed["hostname"], config.hostname)
+            self.assertIn("cpu", parsed)
+            self.assertIn("timestamp", parsed)
+            self.assertEqual(json.loads(body), {"id": 1})
+        finally:
+            server.shutdown()
+
+    def test_unreachable_backend_raises(self):
+        config = AgentConfig(
+            api_base_url="http://127.0.0.1:1",
+            metrics_endpoint="/api/metrics",
+            max_processes=5,
+        )
+        snapshot = collect_snapshot(config)
+        with self.assertRaises(RuntimeError):
+            post_snapshot(snapshot, config)
 
 
 if __name__ == "__main__":

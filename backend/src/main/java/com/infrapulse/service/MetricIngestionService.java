@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 
 @Service
 @Transactional
@@ -32,6 +33,9 @@ public class MetricIngestionService {
                             .hostname(request.getHostname())
                             .agentId("agent-" + request.getHostname())
                             .agentVersion("0.1.0")
+                            .ipAddresses(request.getIpAddresses() != null
+                                    ? new ArrayList<>(request.getIpAddresses())
+                                    : new ArrayList<>())
                             .createdAt(Instant.now())
                             .updatedAt(Instant.now())
                             .build();
