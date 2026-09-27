@@ -17,6 +17,7 @@ public interface MetricObservationRepository extends JpaRepository<MetricObserva
     List<MetricObservation> findByServerIdAndTimestampBetweenOrderByTimestampDesc(
             Long serverId, Instant start, Instant end);
 
-    @Query("SELECT m FROM MetricObservation m WHERE m.server.id = :serverId ORDER BY m.timestamp DESC LIMIT :limit")
+    @Query(value = "SELECT * FROM metric_observations WHERE server_id = :serverId ORDER BY timestamp DESC LIMIT :limit",
+            nativeQuery = true)
     List<MetricObservation> findRecentByServerId(@Param("serverId") Long serverId, @Param("limit") int limit);
 }
