@@ -1,5 +1,6 @@
 package com.infrapulse.service;
 
+import com.infrapulse.dto.IncidentCreateRequest;
 import com.infrapulse.model.*;
 import com.infrapulse.repository.*;
 import org.springframework.stereotype.Service;
@@ -22,15 +23,18 @@ public class DiagnosticEngine {
     private final DiagnosticResultRepository diagnosticResultRepository;
     private final ServerRepository serverRepository;
     private final TroubleshootingPlaybookRepository playbookRepository;
+    private final IncidentService incidentService;
 
     public DiagnosticEngine(MetricObservationRepository metricObservationRepository,
                             DiagnosticResultRepository diagnosticResultRepository,
                             ServerRepository serverRepository,
-                            TroubleshootingPlaybookRepository playbookRepository) {
+                            TroubleshootingPlaybookRepository playbookRepository,
+                            IncidentService incidentService) {
         this.metricObservationRepository = metricObservationRepository;
         this.diagnosticResultRepository = diagnosticResultRepository;
         this.serverRepository = serverRepository;
         this.playbookRepository = playbookRepository;
+        this.incidentService = incidentService;
     }
 
     @Transactional
@@ -62,6 +66,20 @@ public class DiagnosticEngine {
             result.setMetricObservation(observation);
             result.setTimestamp(Instant.now());
             diagnosticResultRepository.save(result);
+
+            // Create incident for HIGH_CPU diagnostic results
+            if ("HIGH_CPU".equals(result.getConditionCode())) {
+                IncidentCreateRequest incidentRequest = IncidentCreateRequest.builder()
+                        .serverId(server.getId())
+                        .severity(result.getSeverity())
+                        .symptom(result.getDiagnosis())
+                        .detectedMetric("CPU utilization")
+                        .probableCause("High CPU utilization detected")
+                        .evidence(result.getEvidence())
+                        .recommendedAction(result.getRecommendedAction())
+                        .build();
+                incidentService.createIncident(incidentRequest);
+            }
         }
 
         return results;

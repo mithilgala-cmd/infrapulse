@@ -5,6 +5,7 @@ import com.infrapulse.model.MetricObservation;
 import com.infrapulse.model.Server;
 import com.infrapulse.repository.MetricObservationRepository;
 import com.infrapulse.repository.ServerRepository;
+import com.infrapulse.service.DiagnosticEngine;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +19,14 @@ public class MetricIngestionService {
 
     private final ServerRepository serverRepository;
     private final MetricObservationRepository metricObservationRepository;
+    private final DiagnosticEngine diagnosticEngine;
 
     public MetricIngestionService(ServerRepository serverRepository,
-                                  MetricObservationRepository metricObservationRepository) {
+                                  MetricObservationRepository metricObservationRepository,
+                                  DiagnosticEngine diagnosticEngine) {
         this.serverRepository = serverRepository;
         this.metricObservationRepository = metricObservationRepository;
+        this.diagnosticEngine = diagnosticEngine;
     }
 
     @Transactional
@@ -89,7 +93,12 @@ public class MetricIngestionService {
                 .createdAt(Instant.now())
                 .build();
 
-        return metricObservationRepository.save(observation);
+        MetricObservation savedObservation = metricObservationRepository.save(observation);
+        // Trigger diagnostic evaluation after saving the metric
+        if (savedObservation.getServer() != null) {
+            diagnosticEngine.evaluate(savedObservation.getServer().getId());
+        }
+        return savedObservation;
     }
 
     @Transactional(readOnly = true)
